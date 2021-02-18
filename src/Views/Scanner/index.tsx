@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+/* eslint-disable react-hooks/exhaustive-deps */
+import React, { useCallback, useEffect, useState } from 'react';
 import { BigNumber, ethers } from 'ethers';
 import { Box, Button, Card, makeStyles, Tab, Tabs, TextField, Typography } from '@material-ui/core';
 import { MuiPickersUtilsProvider, KeyboardDatePicker } from '@material-ui/pickers';
@@ -28,6 +29,9 @@ const useStyles = makeStyles(() => ({
 	},
 	tabs: {
 		marginBottom: '10px',
+	},
+	datePicker: {
+		margin: '0 10px !important',
 	},
 }));
 
@@ -85,23 +89,37 @@ const Scanner = () => {
 		setTabIndex(newValue);
 	};
 
-	const handleDateChange = (date: MaterialUiPickersDate) => {
-		if (!date) {
+	// This feature requires the Etherscan PRO API Key.
+	// As I used the normal API key, it will not work.
+	// Once you change the REACT_APP_ETHERSCAN_API_KEY to a PRO key, it will work.
+	const updateBalanceByDate = useCallback(() => {
+		if (!selectedDate) {
 			return;
 		}
 
-		setSelectedDate(date);
-		const timestamp = new Date(date.toLocaleDateString()).getTime();
+		const timestamp = new Date(selectedDate.toLocaleDateString()).getTime();
 		if (transactions.length > 0) {
 			const tx = transactions.find(item => item.timeStamp && Number(item.timeStamp) < timestamp);
 			if (tx) {
-			} else {
-				setBalanceByDate('0');
+				axios
+					.get(
+						`https://api.etherscan.io/api?module=account&action=balancehistory&address=${address}&blockno=${tx.blockNumber}&apikey=${process.env.REACT_APP_ETHERSCAN_API_KEY}`
+					)
+					.then(res => {
+						console.log(res);
+					})
+					.catch(e => {
+						console.error(e);
+					});
+				return;
 			}
-		} else {
-			setBalanceByDate('0');
 		}
-	};
+		setBalanceByDate('0');
+	}, [selectedDate, transactions]);
+
+	useEffect(() => {
+		updateBalanceByDate();
+	}, [transactions, selectedDate, updateBalanceByDate]);
 
 	const getTotalAmount = () => {
 		return transactions.reduce(
@@ -134,7 +152,7 @@ const Scanner = () => {
 				<Typography variant="h6">
 					ETH associated with transactions: {ethers.utils.formatEther(getTotalAmount())} Ether
 				</Typography>
-				<Typography variant="h6">
+				<Typography variant="h6" style={{ display: 'flex', alignItems: 'center' }}>
 					ETH Balance on{' '}
 					<MuiPickersUtilsProvider utils={DateFnsUtils}>
 						<KeyboardDatePicker
@@ -144,14 +162,15 @@ const Scanner = () => {
 							margin="normal"
 							id="date-picker-inline"
 							value={selectedDate}
-							onChange={handleDateChange}
+							onChange={date => setSelectedDate(date)}
 							KeyboardButtonProps={{
 								'aria-label': 'change date',
 							}}
+							className={classes.datePicker}
 						/>
+						is {balanceByDate} Ether
 					</MuiPickersUtilsProvider>
 				</Typography>
-				<Typography variant="h6">{balanceByDate}</Typography>
 			</Card>
 
 			<Card className={classes.card}>
