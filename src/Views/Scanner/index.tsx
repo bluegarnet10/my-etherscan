@@ -32,6 +32,7 @@ const useStyles = makeStyles(() => ({
 	},
 	datePicker: {
 		margin: '0 10px !important',
+		width: '140px',
 	},
 }));
 
@@ -97,7 +98,7 @@ const Scanner = () => {
 			return;
 		}
 
-		const timestamp = new Date(selectedDate.toLocaleDateString()).getTime();
+		const timestamp = Date.UTC(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth(), selectedDate.getUTCDate());
 		if (transactions.length > 0) {
 			const tx = transactions.find(item => item.timeStamp && Number(item.timeStamp) < timestamp);
 			if (tx) {
@@ -158,7 +159,7 @@ const Scanner = () => {
 						<KeyboardDatePicker
 							disableToolbar
 							variant="inline"
-							format="MM/dd/yyyy"
+							format="yyyy/MM/dd"
 							margin="normal"
 							id="date-picker-inline"
 							value={selectedDate}
